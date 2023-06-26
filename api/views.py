@@ -4,12 +4,22 @@ from base.models import Item
 from .serializers import ItemSerializer
 from typing import List
 from rest_framework.pagination import PageNumberPagination
+from django.db import connection
+from django.db.backends.utils import CursorWrapper
+from django.db.models import Q
+
 
 
 @api_view(['GET'])
 def getData(request) -> List:
-    items = Item.objects.all()
-    serializer = ItemSerializer(items, many=True) # set many to tell that we want to seialize multiple items
+    with connection.cursor() as cursor:
+        cursor = CursorWrapper(cursor, connection)
+        # items = Item.objects.all()
+        queryData = Item.objects
+        items = queryData.filter(Q(name__startswith='i')) | queryData.filter(Q(name__endswith="4"))
+        print(items.query)
+        print(connection.queries) # for checking the time and sqls
+    serializer = ItemSerializer(items, many=True)
     return Response(serializer.data)
 
 @api_view(['POST'])
